@@ -16,6 +16,38 @@
 
 package au.fsat.sbt.indocker
 
-class SbtInDockerPlugin {
+import sbt._
+import scala.sys.process._
 
+object SbtInDockerPlugin {
+
+  /**
+   * Runs SBT target within Docker image specified by `dockerBaseImage`.
+   *
+   * @param projectDir base directory of the current SBT project.
+   * @param dockerBaseImage the base image to run the SBT task with.
+   * @param sbtArgs the input arguments to the SBT command to be run within the Docker container.
+   * @param log the SBT logger.
+   */
+  def runSbtInDocker(projectDir: File, dockerBaseImage: String, sbtArgs: Seq[String], log: Logger): Unit = {
+    def mount(input: (File, String), mode: String): Seq[String] = {
+      val (from, to) = input
+      if (from.exists())
+        Seq("-v", s"${from.absolutePath}:$to:$mode")
+      else
+        Seq.empty[String]
+    }
+
+    val dockerCommands =
+      Seq("docker", "run") ++
+        mount(projectDir.getAbsoluteFile -> "/opt/source", "rw") ++
+        mount(Path.userHome / ".ivy2" / "cache" -> "/root/.ivy2/cache", "rw") ++
+        mount(Path.userHome / ".sbt" / "preloaded" -> "/root/.sbt/preloaded", "ro") ++
+        Seq(
+          dockerBaseImage,
+          "bash", "-c", s"cd /opt/source && sbt ${sbtArgs.mkString(" ")}")
+
+    log.info(dockerCommands.mkString(" "))
+    dockerCommands.!!(log)
+  }
 }
