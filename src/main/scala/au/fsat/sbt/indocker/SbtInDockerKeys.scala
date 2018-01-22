@@ -16,6 +16,26 @@
 
 package au.fsat.sbt.indocker
 
-trait SbtInDockerKeys {
+import sbt._
 
+trait SbtInDockerKeys {
+  /**
+   * Accepts the SBT input argument to be run under Centos 7 docker image.
+   */
+  lazy val centos7 = inputKey[Unit]("centos-7")
+
+  /**
+   * The name of the Centos 7 image to run the SBT task with.
+   */
+  lazy val centos7BaseImage = SettingKey[String]("centos7-base-image", "The name of the Centos 7 image to run the SBT task with.")
+
+  /**
+   * Accepts the SBT input argument to be run under Ubuntu Xenial docker image.
+   */
+  lazy val xenial = inputKey[Unit]("xenial")
+
+  /**
+   * The name of the Ubuntu Xenial image to run the SBT task with.
+   */
+  lazy val xenialBaseImage = SettingKey[String]("xenial-base-image", "The name of the Ubuntu Xenial image to run the SBT task with.")
 }
