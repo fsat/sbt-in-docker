@@ -42,9 +42,18 @@ The plugin starts a Docker container with appropriate image, mounting the follow
 | `~/.sbt/preloaded`  | `/root/.sbt/preloaded` | `r`  | Read only is required to read the cached SBT artifacts. |  
   
 
-## Known issues
+## TODO
 
 * No support for SBT 0.13.*
-* `sbt console` doesn't work within the Docker container, i.e. no interactive terminal.
 * The SBT build output within container's `STDOUT` doesn't get displayed on the terminal.
+  * Assign name.
+  * Print docker logs.
+* Clean up container after run
+  * With option to disable.
+
+
+## Known issues
+
+* `sbt console` doesn't work within the Docker container, i.e. no interactive terminal.
+
 
