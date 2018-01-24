@@ -17,9 +17,35 @@
 package au.fsat.sbt.indocker
 
 import sbt._
+import sbt.Keys._
+import sbt.internal.util.complete.Parsers.spaceDelimited
 import scala.sys.process._
 
-object SbtInDockerPlugin {
+object SbtInDockerPlugin extends AutoPlugin {
+  object autoImport extends SbtInDockerKeys
+
+  import autoImport._
+
+  override def requires = empty
+  override def trigger = allRequirements
+
+  private val InDocker = config("in-docker").describedAs("TODO")
+
+  override def projectSettings: Seq[Def.Setting[_]] =
+    inConfig(InDocker)(Seq(
+      centos7BaseImage := "fsat/centos-7-jdk-8-sbt:latest",
+      centos7 := {
+        val args: Seq[String] = spaceDelimited("<arg>").parsed
+        val log = streams.value.log
+        runSbtInDocker((baseDirectory in ThisBuild).value, centos7BaseImage.value, args, log)
+      },
+
+      xenialBaseImage := "fsat/xenial-jdk-8-sbt:latest",
+      xenial := {
+        val args: Seq[String] = spaceDelimited("<arg>").parsed
+        val log = streams.value.log
+        runSbtInDocker((baseDirectory in ThisBuild).value, xenialBaseImage.value, args, log)
+      }))
 
   /**
    * Runs SBT target within Docker image specified by `dockerBaseImage`.
@@ -29,7 +55,7 @@ object SbtInDockerPlugin {
    * @param sbtArgs the input arguments to the SBT command to be run within the Docker container.
    * @param log the SBT logger.
    */
-  def runSbtInDocker(projectDir: File, dockerBaseImage: String, sbtArgs: Seq[String], log: Logger): Unit = {
+  private[indocker] def runSbtInDocker(projectDir: File, dockerBaseImage: String, sbtArgs: Seq[String], log: Logger): Unit = {
     def mount(input: (File, String), mode: String): Seq[String] = {
       val (from, to) = input
       if (from.exists())

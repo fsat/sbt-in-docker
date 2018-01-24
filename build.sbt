@@ -1,6 +1,6 @@
 
 val Versions = new {
-  val crossSbtVersions = Vector("0.13.16", "1.1.0")
+  val crossSbtVersions = Vector("1.1.0") // TODO: add SBT "0.13.16"
   val nativePackager   = "1.3.2"
   val scala            = "2.12.4"
   val scalaTest        = "3.0.1"

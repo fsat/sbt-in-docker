@@ -43,7 +43,7 @@ The plugin starts a Docker container with appropriate image, mounting the follow
 
 ## Known issues
 
+* No support for SBT 0.13.*
 * `sbt console` doesn't work within the Docker container, i.e. no interactive terminal.
 * The SBT build output within container's `STDOUT` doesn't get displayed on the terminal.
 
-__This repo is still WIP - more things to come__
