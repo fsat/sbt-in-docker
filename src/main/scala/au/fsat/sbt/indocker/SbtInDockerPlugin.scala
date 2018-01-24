@@ -68,6 +68,7 @@ object SbtInDockerPlugin extends AutoPlugin {
       Seq("docker", "run") ++
         mount(projectDir.getAbsoluteFile -> "/opt/source", "rw") ++
         mount(Path.userHome / ".ivy2" / "cache" -> "/root/.ivy2/cache", "rw") ++
+        mount(Path.userHome / ".ivy2" / "local" -> "/root/.ivy2/local", "rw") ++
         mount(Path.userHome / ".sbt" / "preloaded" -> "/root/.sbt/preloaded", "ro") ++
         Seq(
           dockerBaseImage,

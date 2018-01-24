@@ -38,6 +38,7 @@ The plugin starts a Docker container with appropriate image, mounting the follow
 | ------------------- | ---------------------- | ---- | ------- |
 | Current project Dir | `/opt/source`          | `rw` | Read and write mount is required to write the result of the task into the project directory |  
 | `~/.ivy2/cache`     | `/root/.ivy2/cache`    | `rw` | Read and write mount is required to read the cached jars and to write the resolved jars |  
+| `~/.ivy2/local`     | `/root/.ivy2/local`    | `rw` | Read and write mount is required to read the cached SBT plugins and to write the resolved plugins |  
 | `~/.sbt/preloaded`  | `/root/.sbt/preloaded` | `r`  | Read only is required to read the cached SBT artifacts. |  
   
 
