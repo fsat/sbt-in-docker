@@ -16,7 +16,7 @@
 
 package au.fsat.sbt.indocker
 
-import au.fsat.sbt.indocker.out.NoOpOutputStream
+import au.fsat.sbt.indocker.out.{ NoOpOutputStream, StdoutWrapperOutputStream }
 import sbt._
 import sbt.Keys._
 import sbt.internal.util.complete.Parsers.spaceDelimited
@@ -93,8 +93,13 @@ object SbtInDockerPlugin extends AutoPlugin {
 
     // This needs to be formatted like this so it can be copy-pasted into the console
     log.info(s"""${dockerCommands.dropRight(1).mkString(" ")} "${dockerCommands.last}"""")
-    dockerCommands.!(log)
+
+    // IMPORTANT: Don't pass `System.out` directly into this method.
+    // The `#>` method closes the `OutputStream` given to it once the process completes, and we certainly won't want
+    // to close `System.out`.
+    dockerCommands.#>(stdoutWrapperOutputStream).!
   }
 
   private def noOpOutputStream: NoOpOutputStream = new NoOpOutputStream()
+  private def stdoutWrapperOutputStream: StdoutWrapperOutputStream = new StdoutWrapperOutputStream(System.out)
 }
