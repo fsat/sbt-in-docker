@@ -40,7 +40,7 @@ object SbtInDockerPlugin extends AutoPlugin {
       },
 
       xenialBaseImage in LocalRootProject := "fsat/xenial-jdk-8-sbt:latest",
-      xenial  in LocalRootProject := {
+      xenial in LocalRootProject := {
         val args: Seq[String] = spaceDelimited("<arg>").parsed
         val log = streams.value.log
         runSbtInDocker((baseDirectory in LocalRootProject).value, (xenialBaseImage in LocalRootProject).value, args, log)
@@ -73,7 +73,8 @@ object SbtInDockerPlugin extends AutoPlugin {
           dockerBaseImage,
           "bash", "-c", s"cd /opt/source && sbt ${sbtArgs.mkString(" ")}")
 
-    log.info(dockerCommands.mkString(" "))
+    // This needs to be formatted like this so it can be copy-pasted into the console
+    log.info(s"""${dockerCommands.dropRight(1).mkString(" ")} "${dockerCommands.last}"""")
     dockerCommands.!(log)
   }
 }
