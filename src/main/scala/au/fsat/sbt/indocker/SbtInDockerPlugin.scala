@@ -26,25 +26,24 @@ object SbtInDockerPlugin extends AutoPlugin {
 
   import autoImport._
 
-  override def requires = empty
   override def trigger = allRequirements
 
-  private val InDocker = config("in-docker").describedAs("TODO")
+  private val InDocker = config("in-docker")
 
-  override def projectSettings: Seq[Def.Setting[_]] =
+  override lazy val projectSettings: Seq[Def.Setting[_]] =
     inConfig(InDocker)(Seq(
-      centos7BaseImage := "fsat/centos-7-jdk-8-sbt:latest",
-      centos7 := {
+      centos7BaseImage in LocalRootProject := "fsat/centos-7-jdk-8-sbt:latest",
+      centos7 in LocalRootProject := {
         val args: Seq[String] = spaceDelimited("<arg>").parsed
         val log = streams.value.log
-        runSbtInDocker((baseDirectory in ThisBuild).value, centos7BaseImage.value, args, log)
+        runSbtInDocker((baseDirectory in LocalRootProject).value, (centos7BaseImage in LocalRootProject).value, args, log)
       },
 
-      xenialBaseImage := "fsat/xenial-jdk-8-sbt:latest",
-      xenial := {
+      xenialBaseImage in LocalRootProject := "fsat/xenial-jdk-8-sbt:latest",
+      xenial  in LocalRootProject := {
         val args: Seq[String] = spaceDelimited("<arg>").parsed
         val log = streams.value.log
-        runSbtInDocker((baseDirectory in ThisBuild).value, xenialBaseImage.value, args, log)
+        runSbtInDocker((baseDirectory in LocalRootProject).value, (xenialBaseImage in LocalRootProject).value, args, log)
       }))
 
   /**
