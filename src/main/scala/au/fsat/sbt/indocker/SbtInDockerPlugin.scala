@@ -16,6 +16,8 @@
 
 package au.fsat.sbt.indocker
 
+import java.io.OutputStream
+
 import au.fsat.sbt.indocker.out.{ NoOpOutputStream, StdoutWrapperOutputStream }
 import sbt._
 import sbt.Keys._
@@ -25,7 +27,14 @@ import scala.sys.process._
 import scala.util.Try
 
 object SbtInDockerPlugin extends AutoPlugin {
-  object autoImport extends SbtInDockerKeys
+  type Commands = Seq[String]
+  type ReturnCode = Int
+  type RunProcess = (Commands, OutputStream) => Try[ReturnCode]
+  type LogCommands = String => Unit
+
+  object autoImport extends SbtInDockerKeys {
+    lazy val exec = settingKey[RunProcess]("exec")
+  }
 
   import autoImport._
 
@@ -35,6 +44,8 @@ object SbtInDockerPlugin extends AutoPlugin {
 
   override lazy val projectSettings: Seq[Def.Setting[_]] =
     inConfig(InDocker)(Seq(
+      exec in LocalRootProject := runProcess,
+
       centos7BaseImage in LocalRootProject := "fsat/centos-7-jdk-8-sbt:latest",
       centos7ContainerName in LocalRootProject := "sbt-in-docker-centos7",
       centos7 in LocalRootProject := {
@@ -42,10 +53,13 @@ object SbtInDockerPlugin extends AutoPlugin {
         val log = streams.value.log
 
         runSbtInDocker(
-          (centos7ContainerName in LocalRootProject).value,
+          (exec in LocalRootProject).value,
+          Path.userHome,
           (baseDirectory in LocalRootProject).value,
           (centos7BaseImage in LocalRootProject).value,
-          args, log)
+          (centos7ContainerName in LocalRootProject).value,
+          args,
+          logCommand(log, _))
       },
 
       xenialBaseImage in LocalRootProject := "fsat/xenial-jdk-8-sbt:latest",
@@ -55,21 +69,27 @@ object SbtInDockerPlugin extends AutoPlugin {
         val log = streams.value.log
 
         runSbtInDocker(
-          (xenial7ContainerName in LocalRootProject).value,
+          (exec in LocalRootProject).value,
+          Path.userHome,
           (baseDirectory in LocalRootProject).value,
           (xenialBaseImage in LocalRootProject).value,
-          args, log)
+          (xenial7ContainerName in LocalRootProject).value,
+          args,
+          logCommand(log, _))
       }))
 
   /**
    * Runs SBT target within Docker image specified by `dockerBaseImage`.
    *
+   * @param exec the function which is used to execute the `docker run` process.
+   * @param userHome path of the current user home.
+   * @param containerName name of the container to run the SBT task with.
    * @param projectDir base directory of the current SBT project.
    * @param dockerBaseImage the base image to run the SBT task with.
    * @param sbtArgs the input arguments to the SBT command to be run within the Docker container.
-   * @param log the SBT logger.
+   * @param logCommands the SBT logger.
    */
-  private[indocker] def runSbtInDocker(containerName: String, projectDir: File, dockerBaseImage: String, sbtArgs: Seq[String], log: Logger): Unit = {
+  private[indocker] def runSbtInDocker(exec: RunProcess, userHome: File, projectDir: File, dockerBaseImage: String, containerName: String, sbtArgs: Seq[String], logCommands: LogCommands): Unit = {
     def mount(input: (File, String), mode: String): Seq[String] = {
       val (from, to) = input
       if (from.exists())
@@ -78,28 +98,31 @@ object SbtInDockerPlugin extends AutoPlugin {
         Seq.empty[String]
     }
 
-    Try(Seq("docker", "rm", "-f", containerName).#>(noOpOutputStream).!)
+    exec(Seq("docker", "rm", "-f", containerName), noOpOutputStream)
 
     val dockerCommands =
       Seq("docker", "run") ++
         mount(projectDir.getAbsoluteFile -> "/opt/source", "rw") ++
-        mount(Path.userHome / ".ivy2" / "cache" -> "/root/.ivy2/cache", "rw") ++
-        mount(Path.userHome / ".ivy2" / "local" -> "/root/.ivy2/local", "rw") ++
-        mount(Path.userHome / ".sbt" / "preloaded" -> "/root/.sbt/preloaded", "ro") ++
+        mount(userHome / ".ivy2" / "cache" -> "/root/.ivy2/cache", "rw") ++
+        mount(userHome / ".ivy2" / "local" -> "/root/.ivy2/local", "rw") ++
+        mount(userHome / ".sbt" / "preloaded" -> "/root/.sbt/preloaded", "ro") ++
         Seq(
           "--name", containerName,
           dockerBaseImage,
           "bash", "-c", s"cd /opt/source && sbt ${sbtArgs.mkString(" ")}")
 
     // This needs to be formatted like this so it can be copy-pasted into the console
-    log.info(s"""${dockerCommands.dropRight(1).mkString(" ")} "${dockerCommands.last}"""")
+    logCommands(s"""${dockerCommands.dropRight(1).mkString(" ")} "${dockerCommands.last}"""")
 
     // IMPORTANT: Don't pass `System.out` directly into this method.
-    // The `#>` method closes the `OutputStream` given to it once the process completes, and we certainly won't want
-    // to close `System.out`.
-    dockerCommands.#>(stdoutWrapperOutputStream).!
+    // The `#>` method invoked within closes the `OutputStream` given to it once the process completes,
+    // and we certainly won't want to close `System.out`.
+    exec(dockerCommands, stdoutWrapperOutputStream)
   }
+
+  private def runProcess(commands: Commands, out: OutputStream): Try[ReturnCode] = Try(commands.#>(out).!)
 
   private def noOpOutputStream: NoOpOutputStream = new NoOpOutputStream()
   private def stdoutWrapperOutputStream: StdoutWrapperOutputStream = new StdoutWrapperOutputStream(System.out)
+  private def logCommand(log: Logger, commands: String): Unit = log.info(commands)
 }
