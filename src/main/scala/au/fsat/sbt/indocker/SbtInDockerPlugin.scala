@@ -16,10 +16,13 @@
 
 package au.fsat.sbt.indocker
 
+import au.fsat.sbt.indocker.out.NoOpOutputStream
 import sbt._
 import sbt.Keys._
 import sbt.internal.util.complete.Parsers.spaceDelimited
+
 import scala.sys.process._
+import scala.util.Try
 
 object SbtInDockerPlugin extends AutoPlugin {
   object autoImport extends SbtInDockerKeys
@@ -33,17 +36,29 @@ object SbtInDockerPlugin extends AutoPlugin {
   override lazy val projectSettings: Seq[Def.Setting[_]] =
     inConfig(InDocker)(Seq(
       centos7BaseImage in LocalRootProject := "fsat/centos-7-jdk-8-sbt:latest",
+      centos7ContainerName in LocalRootProject := "sbt-in-docker-centos7",
       centos7 in LocalRootProject := {
         val args: Seq[String] = spaceDelimited("<arg>").parsed
         val log = streams.value.log
-        runSbtInDocker((baseDirectory in LocalRootProject).value, (centos7BaseImage in LocalRootProject).value, args, log)
+
+        runSbtInDocker(
+          (centos7ContainerName in LocalRootProject).value,
+          (baseDirectory in LocalRootProject).value,
+          (centos7BaseImage in LocalRootProject).value,
+          args, log)
       },
 
       xenialBaseImage in LocalRootProject := "fsat/xenial-jdk-8-sbt:latest",
+      xenial7ContainerName in LocalRootProject := "sbt-in-docker-xenial",
       xenial in LocalRootProject := {
         val args: Seq[String] = spaceDelimited("<arg>").parsed
         val log = streams.value.log
-        runSbtInDocker((baseDirectory in LocalRootProject).value, (xenialBaseImage in LocalRootProject).value, args, log)
+
+        runSbtInDocker(
+          (xenial7ContainerName in LocalRootProject).value,
+          (baseDirectory in LocalRootProject).value,
+          (xenialBaseImage in LocalRootProject).value,
+          args, log)
       }))
 
   /**
@@ -54,7 +69,7 @@ object SbtInDockerPlugin extends AutoPlugin {
    * @param sbtArgs the input arguments to the SBT command to be run within the Docker container.
    * @param log the SBT logger.
    */
-  private[indocker] def runSbtInDocker(projectDir: File, dockerBaseImage: String, sbtArgs: Seq[String], log: Logger): Unit = {
+  private[indocker] def runSbtInDocker(containerName: String, projectDir: File, dockerBaseImage: String, sbtArgs: Seq[String], log: Logger): Unit = {
     def mount(input: (File, String), mode: String): Seq[String] = {
       val (from, to) = input
       if (from.exists())
@@ -63,6 +78,8 @@ object SbtInDockerPlugin extends AutoPlugin {
         Seq.empty[String]
     }
 
+    Try(Seq("docker", "rm", "-f", containerName).#>(noOpOutputStream).!)
+
     val dockerCommands =
       Seq("docker", "run") ++
         mount(projectDir.getAbsoluteFile -> "/opt/source", "rw") ++
@@ -70,6 +87,7 @@ object SbtInDockerPlugin extends AutoPlugin {
         mount(Path.userHome / ".ivy2" / "local" -> "/root/.ivy2/local", "rw") ++
         mount(Path.userHome / ".sbt" / "preloaded" -> "/root/.sbt/preloaded", "ro") ++
         Seq(
+          "--name", containerName,
           dockerBaseImage,
           "bash", "-c", s"cd /opt/source && sbt ${sbtArgs.mkString(" ")}")
 
@@ -77,4 +95,6 @@ object SbtInDockerPlugin extends AutoPlugin {
     log.info(s"""${dockerCommands.dropRight(1).mkString(" ")} "${dockerCommands.last}"""")
     dockerCommands.!(log)
   }
+
+  private def noOpOutputStream: NoOpOutputStream = new NoOpOutputStream()
 }

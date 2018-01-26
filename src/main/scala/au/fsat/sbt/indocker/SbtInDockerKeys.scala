@@ -30,6 +30,11 @@ trait SbtInDockerKeys {
   lazy val centos7BaseImage = SettingKey[String]("centos7-base-image", "The name of the Centos 7 image to run the SBT task with.")
 
   /**
+   * The name of the Centos 7 container to run the SBT task with.
+   */
+  lazy val centos7ContainerName = SettingKey[String]("centos7-container-name", "The name of the Centos 7 container to run the SBT task with.")
+
+  /**
    * Accepts the SBT input argument to be run under Ubuntu Xenial docker image.
    */
   lazy val xenial = inputKey[Unit]("xenial")
@@ -38,4 +43,9 @@ trait SbtInDockerKeys {
    * The name of the Ubuntu Xenial image to run the SBT task with.
    */
   lazy val xenialBaseImage = SettingKey[String]("xenial-base-image", "The name of the Ubuntu Xenial image to run the SBT task with.")
+
+  /**
+   * The name of the Ubuntu Xenial container to run the SBT task with.
+   */
+  lazy val xenial7ContainerName = SettingKey[String]("xenial-container-name", "The name of the Xenial container to run the SBT task with.")
 }
