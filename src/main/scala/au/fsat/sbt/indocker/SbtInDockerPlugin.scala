@@ -75,6 +75,6 @@ object SbtInDockerPlugin extends AutoPlugin {
           "bash", "-c", s"cd /opt/source && sbt ${sbtArgs.mkString(" ")}")
 
     log.info(dockerCommands.mkString(" "))
-    dockerCommands.!!(log)
+    dockerCommands.!(log)
   }
 }
