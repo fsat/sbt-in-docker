@@ -1,7 +1,19 @@
-//sys.props.get("plugin.version") match {
-//  case Some(x) => addSbtPlugin("au.fsat" % "sbt-in-docker" % x)
-//  case _ => sys.error("""|The system property 'plugin.version' is not defined.
-//                         |Specify this property using the scriptedLaunchOpts -D.""".stripMargin)
-//}
+import sbt._
 
-addSbtPlugin("au.fsat" % "sbt-in-docker" % "0.1.0-SNAPSHOT")
+lazy val pluginVersion = {
+  def pluginVersionFromFile: Option[String] =
+    Option(Path("").asFile.getAbsoluteFile / "target" / "plugin-version")
+      .filter(_.exists())
+      .map(IO.read(_).trim)
+
+  def pluginVersionFromSysProps: Option[String] =
+    sys.props.get("plugin.version")
+
+  pluginVersionFromSysProps.orElse(pluginVersionFromFile)
+}
+
+pluginVersion match {
+  case Some(x) => addSbtPlugin("au.fsat" % "sbt-in-docker" % x)
+  case _ => sys.error("Unable to detect plugin version")
+}
+

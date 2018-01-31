@@ -3,8 +3,12 @@ import scala.sys.process._
 name := "centos7"
 scalaVersion := "2.12.4"
 
-lazy val unameFile = settingKey[File]("uname-file")
+TaskKey[Unit]("savePluginVersionToFile") := {
+  val pluginVersionFile = target.value / "plugin-version"
+  IO.write(pluginVersionFile, version.value)
+}
 
+lazy val unameFile = settingKey[File]("uname-file")
 unameFile := target.value / "uname-output"
 
 TaskKey[Unit]("getOs") := {
