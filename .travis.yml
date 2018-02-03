@@ -1,0 +1,28 @@
+language: scala
+scala:
+  - 2.12.4
+jdk:
+  - oraclejdk8
+cache:
+  directories:
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt/launchers
+    - $HOME/docker-images-cached
+before_cache:
+  # Ensure changes to the cache aren't persisted
+  - rm -rf $HOME/.ivy2/cache/au/fsat/sbt/indocker
+  # Delete all ivydata files since ivy touches them on each build
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" | xargs rm
+
+before_script:
+  # Cache docker images from Docker hub.
+  # The images are cached so we can reuse the layers.
+  - sh travis-cache-docker-images.sh
+
+script:
+  # Rebuild the images
+  - sh build-centos-7-jdk8-sbt.sh
+  - sh build-xenial-jdk8-sbt.sh
+  # TODO: support SBT 0.13 + scripted test
+  - sbt test
+  - sbt scripted
