@@ -42,6 +42,32 @@ The plugin starts a Docker container with appropriate image, mounting the follow
 | `~/.sbt/preloaded`  | `/root/.sbt/preloaded` | `r`  | Read only is required to read the cached SBT artifacts. |  
   
 
+## Dependency: Docker images
+
+This plugin depends on the Docker images placed in the `docker-images/` directory.
+
+At the moment the following Docker images are present.
+
+#### `centos-7-jdk-8-sbt`
+
+This image is created to facilitate building RPM archives on non-RPM distro.
+
+The `centos:7` image is used as base image with the following additional items installed:
+
+* Open JDK 8
+* SBT `1.0.4`
+
+
+#### `xenial-jdk-8-sbt`
+
+This image is created to facilitate building Debian archives on non Debian based distro.
+
+The `ubuntu:xenial` image is used as base image with the following additional items installed:
+
+* Open JDK 8
+* SBT `1.0.4`
+
+
 ## Known issues
 
 * No support for SBT 0.13.*
