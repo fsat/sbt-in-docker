@@ -67,10 +67,3 @@ The `ubuntu:xenial` image is used as base image with the following additional it
 * Open JDK 8
 * SBT `1.0.4`
 
-
-## Known issues
-
-* No support for SBT 0.13.*
-* `sbt console` doesn't work within the Docker container, i.e. no interactive terminal.
-
-
